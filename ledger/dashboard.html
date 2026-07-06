@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel — DIAM'S COLORS Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/ledger.css">
+<style>
+  .total-display {
+    background: var(--accent-bg);
+    border: 1px solid rgba(5,150,105,0.18);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+    text-align: center;
+    margin-top: var(--space-2);
+  }
+  .total-display .stat-label { color: var(--accent); }
+  .total-amount {
+    font-size: var(--text-3xl);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-1);
+    font-variant-numeric: tabular-nums;
+  }
+  .recent-section { margin-top: var(--space-8); }
+  .recent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <a href="dashboard.html" class="app-brand">
+    <img src="../diams colors logo .webp" alt="">
+    <span>DIAM'S COLORS</span>
+  </a>
+  <nav class="app-nav" aria-label="Navegación principal">
+    <a href="dashboard.html" class="active">Panel</a>
+    <a href="history.html">Historial</a>
+    <button type="button" class="icon-btn" id="logoutBtn" aria-label="Cerrar sesión" title="Cerrar sesión">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </nav>
+</header>
+
+<main class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Panel</h1>
+      <p class="page-subtitle">Crea una nueva factura y consulta tu actividad reciente.</p>
+    </div>
+  </div>
+
+  <section class="stats-grid" aria-label="Resumen">
+    <div class="stat-card">
+      <div class="stat-label">Facturas totales</div>
+      <div class="stat-value" id="statCount"><span class="skeleton" style="width:36px;height:1.4em;">—</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ingresos este mes</div>
+      <div class="stat-value" id="statMonth"><span class="skeleton" style="width:72px;height:1.4em;">—</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Última factura</div>
+      <div class="stat-value" id="statLast"><span class="skeleton" style="width:96px;height:1.4em;">—</span></div>
+    </div>
+  </section>
+
+  <section class="form-card" aria-label="Nueva factura">
+    <h2 class="page-subtitle" style="margin-bottom: var(--space-5); color: var(--text-1); font-weight: 600; font-size: var(--text-lg);">Nueva factura</h2>
+
+    <form id="invoiceForm" novalidate>
+      <div class="form-row two-col">
+        <div class="field">
+          <label class="field-label" for="clientName">Cliente <span class="required">*</span></label>
+          <input type="text" id="clientName" name="clientName" placeholder="Nombre del cliente" required>
+          <p class="field-error" id="err-clientName">Ingresa el nombre del cliente.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="invoiceDate">Fecha <span class="required">*</span></label>
+          <input type="date" id="invoiceDate" name="invoiceDate" required>
+          <p class="field-error" id="err-invoiceDate">Selecciona una fecha.</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="jobType">Tipo de trabajo <span class="required">*</span></label>
+        <input type="text" id="jobType" name="jobType" list="jobTypeList" placeholder="ej. Pintura Exterior" required autocomplete="off">
+        <datalist id="jobTypeList"></datalist>
+        <p class="field-error" id="err-jobType">Ingresa el tipo de trabajo.</p>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Materiales utilizados <span class="required">*</span></label>
+        <div id="materialsList"></div>
+        <button type="button" class="btn btn-secondary" id="addMaterialBtn" style="margin-top: var(--space-2);">+ Agregar material</button>
+      </div>
+
+      <div class="form-row two-col">
+        <div class="field">
+          <label class="field-label" for="pricePerSqft">Precio por ft² <span class="required">*</span></label>
+          <div class="input-prefix-wrapper">
+            <span class="input-prefix">$</span>
+            <input type="number" id="pricePerSqft" name="pricePerSqft" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal" required>
+          </div>
+          <p class="field-error" id="err-pricePerSqft">Ingresa un precio válido mayor a cero.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="sqft">Pies cuadrados <span class="required">*</span></label>
+          <div class="input-prefix-wrapper" style="position:relative;">
+            <input type="number" id="sqft" name="sqft" placeholder="0" min="1" step="1" inputmode="numeric" required>
+          </div>
+          <p class="field-error" id="err-sqft">Ingresa un valor mayor a cero.</p>
+        </div>
+      </div>
+
+      <div class="total-display">
+        <div class="stat-label">Total estimado</div>
+        <div class="total-amount" id="liveTotal">$0.00</div>
+      </div>
+
+      <div class="field" style="margin-top: var(--space-6); margin-bottom: 0;">
+        <button type="submit" class="btn btn-primary btn-block" id="saveBtn">Guardar factura</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="recent-section" aria-label="Facturas recientes">
+    <div class="recent-header">
+      <h2 class="page-subtitle" style="color: var(--text-1); font-weight: 600; font-size: var(--text-lg);">Facturas recientes</h2>
+      <a href="history.html" class="btn btn-ghost">Ver todas</a>
+    </div>
+    <div class="table-wrap">
+      <div id="recentContainer">
+        <div aria-hidden="true">
+          <div class="skeleton-row"><span class="skeleton" style="width:28%;"></span><span class="skeleton" style="width:22%;"></span><span class="skeleton" style="width:16%;"></span><span class="skeleton" style="width:12%;"></span></div>
+          <div class="skeleton-row"><span class="skeleton" style="width:24%;"></span><span class="skeleton" style="width:20%;"></span><span class="skeleton" style="width:14%;"></span><span class="skeleton" style="width:10%;"></span></div>
+          <div class="skeleton-row"><span class="skeleton" style="width:30%;"></span><span class="skeleton" style="width:18%;"></span><span class="skeleton" style="width:16%;"></span><span class="skeleton" style="width:12%;"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-dot"></span><span id="toastText"></span></div>
+
+<script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

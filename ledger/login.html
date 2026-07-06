@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar Sesión — DIAM'S COLORS Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/ledger.css">
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: -30%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(5,150,105,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8) var(--space-6);
+    box-shadow: var(--shadow-md);
+  }
+  .login-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+    text-align: center;
+  }
+  .login-brand img { height: 48px; width: 48px; object-fit: contain; border-radius: 10px; }
+  .login-brand h1 { font-size: var(--text-lg); font-weight: 700; }
+  .login-brand p { font-size: var(--text-sm); color: var(--text-2); }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-brand">
+    <img src="../diams colors logo .webp" alt="DIAM'S COLORS, LLC logo">
+    <h1>DIAM'S COLORS</h1>
+    <p>Panel de administración — acceso exclusivo</p>
+  </div>
+
+  <form id="loginForm" novalidate>
+    <div class="field">
+      <label class="field-label" for="email">Correo electrónico</label>
+      <input type="email" id="email" name="email" placeholder="tu@correo.com" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label class="field-label" for="password">Contraseña</label>
+      <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+      <p class="field-error" id="loginError" role="alert" aria-live="polite">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="loginErrorText">Correo o contraseña incorrectos.</span>
+      </p>
+    </div>
+    <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+      Iniciar sesión
+    </button>
+  </form>
+</div>
+
+<script type="module">
+  import { isConfigured, auth, signInWithEmailAndPassword, onAuthStateChanged } from './js/firebase.js';
+
+  const form = document.getElementById('loginForm');
+  const errorMsg = document.getElementById('loginError');
+  const errorText = document.getElementById('loginErrorText');
+  const loginBtn = document.getElementById('loginBtn');
+
+  if (!isConfigured) {
+    errorText.textContent = 'Firebase no está configurado todavía. Contacta al desarrollador.';
+    errorMsg.classList.add('show');
+    loginBtn.disabled = true;
+  } else {
+    onAuthStateChanged(auth, (user) => {
+      if (user) window.location.href = 'dashboard.html';
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    errorMsg.classList.remove('show');
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Entrando...';
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      errorText.textContent = 'Correo o contraseña incorrectos.';
+      errorMsg.classList.add('show');
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Iniciar sesión';
+    }
+  });
+</script>
+
+</body>
+</html>
