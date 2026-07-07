@@ -1,6 +1,9 @@
 import { requireAuth, wireLogout } from './auth-guard.js';
 import { MATERIALS, JOB_TYPE_SUGGESTIONS } from './materials.js';
-import { db, collection, addDoc, getDoc, getDocs, updateDoc, doc, query, orderBy, serverTimestamp } from './firebase.js';
+import {
+  db, collection, addDoc, getDoc, getDocs, updateDoc, doc, query, where, orderBy, limit,
+  serverTimestamp, getCountFromServer, getAggregateFromServer, sum as sumAgg,
+} from './firebase.js';
 
 wireLogout('#logoutBtn');
 
@@ -249,8 +252,10 @@ function wireForm(uid) {
     const materials = collectMaterials();
     const materialsCost = materials.reduce((sum, m) => sum + m.cost, 0);
 
+    const clientName = document.getElementById('clientName').value.trim();
     const invoiceFields = {
-      clientName: document.getElementById('clientName').value.trim(),
+      clientName,
+      clientNameLower: clientName.toLowerCase(),
       jobType: document.getElementById('jobType').value.trim(),
       materials,
       materialsCost,
@@ -283,28 +288,41 @@ function wireForm(uid) {
   });
 }
 
+function monthRange() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const pad = (n) => String(n).padStart(2, '0');
+  const first = `${y}-${pad(m + 1)}-01`;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const last = `${y}-${pad(m + 1)}-${pad(lastDay)}`;
+  return { first, last };
+}
+
 async function loadStatsAndRecent() {
   const container = document.getElementById('recentContainer');
+  const invoicesRef = collection(db, 'invoices');
+  const { first, last } = monthRange();
+
   try {
-    const snap = await getDocs(query(collection(db, 'invoices'), orderBy('date', 'desc')));
-    const invoices = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const [countSnap, monthSnap, lastInvoiceSnap, recentSnap] = await Promise.all([
+      getCountFromServer(invoicesRef),
+      getAggregateFromServer(
+        query(invoicesRef, where('date', '>=', first), where('date', '<=', last)),
+        { total: sumAgg('total') }
+      ),
+      getDocs(query(invoicesRef, orderBy('date', 'desc'), limit(1))),
+      getDocs(query(invoicesRef, orderBy('date', 'desc'), limit(5))),
+    ]);
 
-    document.getElementById('statCount').textContent = invoices.length;
+    const totalCount = countSnap.data().count;
+    document.getElementById('statCount').textContent = totalCount;
+    document.getElementById('statMonth').textContent = currency(monthSnap.data().total || 0);
+    document.getElementById('statLast').textContent = lastInvoiceSnap.empty
+      ? '—'
+      : lastInvoiceSnap.docs[0].data().clientName;
 
-    const now = new Date();
-    const monthTotal = invoices
-      .filter((inv) => {
-        const d = new Date(inv.date);
-        return d.getUTCFullYear() === now.getFullYear() && d.getUTCMonth() === now.getMonth();
-      })
-      .reduce((sum, inv) => sum + (inv.total || 0), 0);
-    document.getElementById('statMonth').textContent = currency(monthTotal);
-
-    document.getElementById('statLast').textContent = invoices.length
-      ? invoices[0].clientName
-      : '—';
-
-    if (!invoices.length) {
+    if (!totalCount) {
       container.innerHTML = `
         <div class="empty-state">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -314,19 +332,20 @@ async function loadStatsAndRecent() {
       return;
     }
 
-    const recent = invoices.slice(0, 5);
     container.innerHTML = `
       <table class="ledger-table">
         <thead><tr><th>Cliente</th><th>Trabajo</th><th>Fecha</th><th>Total</th></tr></thead>
         <tbody>
-          ${recent.map((inv) => `
-            <tr onclick="window.location.href='invoice.html?id=${inv.id}'" style="cursor:pointer;">
+          ${recentSnap.docs.map((d) => {
+            const inv = d.data();
+            return `
+            <tr onclick="window.location.href='invoice.html?id=${d.id}'" style="cursor:pointer;">
               <td data-label="Cliente">${inv.clientName}</td>
               <td data-label="Trabajo" class="cell-meta">${inv.jobType}</td>
               <td data-label="Fecha" class="cell-meta">${inv.date}</td>
               <td data-label="Total" class="cell-total">${currency(inv.total)}</td>
-            </tr>
-          `).join('')}
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>`;
   } catch (err) {

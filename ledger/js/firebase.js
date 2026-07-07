@@ -14,9 +14,16 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  documentId,
   query,
+  where,
   orderBy,
+  limit,
+  startAfter,
   serverTimestamp,
+  getCountFromServer,
+  getAggregateFromServer,
+  sum,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
 
@@ -42,7 +49,14 @@ export {
   updateDoc,
   deleteDoc,
   doc,
+  documentId,
   query,
+  where,
   orderBy,
+  limit,
+  startAfter,
   serverTimestamp,
+  getCountFromServer,
+  getAggregateFromServer,
+  sum,
 };

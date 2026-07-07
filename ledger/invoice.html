@@ -74,8 +74,18 @@
   }
   .invoice-total-row .label { font-size: var(--text-sm); font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
   .invoice-total-row .amount { font-size: var(--text-3xl); font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-  .invoice-actions { display: flex; gap: var(--space-3); }
+  .invoice-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
   .invoice-disclaimer { font-size: var(--text-xs); color: var(--text-3); margin-top: var(--space-6); text-align: center; }
+
+  @media (max-width: 640px) {
+    .invoice-sheet { padding: var(--space-5); }
+    .invoice-actions #printBtn { flex: 1 1 100%; }
+    .invoice-actions a {
+      flex: 1 1 calc(50% - var(--space-3) / 2);
+      text-align: center;
+      white-space: normal;
+    }
+  }
 
   @media print {
     .app-header, .invoice-actions, .toast { display: none !important; }
