@@ -254,7 +254,6 @@ function wireForm(uid) {
     const clientName = document.getElementById('clientName').value.trim();
     const invoiceFields = {
       clientName,
-      clientNameLower: clientName.toLowerCase(),
       jobType: document.getElementById('jobType').value.trim(),
       materials,
       materialsCost,

@@ -1,6 +1,6 @@
 import { requireAuth, wireLogout } from './auth-guard.js';
 import {
-  db, collection, getDocs, deleteDoc, doc, documentId, query, where, orderBy, limit, startAfter,
+  db, collection, getDocs, deleteDoc, doc, documentId, query, orderBy, limit, startAfter,
   getCountFromServer,
 } from './firebase.js';
 
@@ -62,14 +62,14 @@ async function fetchPage(pageNum) {
 
 async function searchInvoices(term) {
   const termLower = term.trim().toLowerCase();
-  const snap = await getDocs(query(
-    invoicesRef(),
-    where('clientNameLower', '>=', termLower),
-    where('clientNameLower', '<', termLower + ''),
-    orderBy('clientNameLower'),
-    limit(50)
-  ));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Firestore has no substring/"contains" query, so a search action (unlike
+  // routine paginated browsing) reads the full collection and filters
+  // client-side - this also works for invoices created before any
+  // search-specific field existed, since it just checks clientName directly.
+  const snap = await getDocs(query(invoicesRef(), orderBy('createdAt', 'desc')));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((inv) => (inv.clientName || '').toLowerCase().includes(termLower));
 }
 
 function renderTable(invoices) {
