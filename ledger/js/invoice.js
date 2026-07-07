@@ -73,6 +73,7 @@ function render(invoice) {
 
       <div class="invoice-actions">
         <button type="button" class="btn btn-primary" id="printBtn">Imprimir / Guardar PDF</button>
+        <a href="dashboard.html?id=${invoice.id}" class="btn btn-secondary">Editar</a>
         <a href="history.html" class="btn btn-secondary">Volver al historial</a>
       </div>
 

@@ -322,6 +322,23 @@ select {
   padding-right: 42px;
 }
 
+/* Mobile browsers render native date/select controls with their own
+   internal chrome, which throws off height parity with plain text
+   inputs even with identical padding. Force a shared explicit height. */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+input[type="password"],
+select {
+  height: 52px;
+}
+
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 input::-webkit-inner-spin-button,
 input::-webkit-outer-spin-button { -webkit-appearance: none; }
 

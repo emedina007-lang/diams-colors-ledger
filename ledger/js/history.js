@@ -58,6 +58,7 @@ function render(invoices) {
             <td data-label="">
               <div class="row-actions">
                 <a class="btn btn-secondary" href="invoice.html?id=${inv.id}">Ver</a>
+                <a class="btn btn-secondary" href="dashboard.html?id=${inv.id}">Editar</a>
                 <button type="button" class="btn btn-destructive" data-id="${inv.id}" data-delete>Eliminar</button>
               </div>
             </td>

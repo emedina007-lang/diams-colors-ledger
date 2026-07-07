@@ -53,12 +53,12 @@
 <main class="page">
   <div class="page-header">
     <div>
-      <h1 class="page-title">Panel</h1>
-      <p class="page-subtitle">Crea una nueva factura y consulta tu actividad reciente.</p>
+      <h1 class="page-title" id="pageTitle">Panel</h1>
+      <p class="page-subtitle" id="pageSubtitle">Crea una nueva factura y consulta tu actividad reciente.</p>
     </div>
   </div>
 
-  <section class="stats-grid" aria-label="Resumen">
+  <section class="stats-grid" aria-label="Resumen" id="statsSection">
     <div class="stat-card">
       <div class="stat-label">Facturas totales</div>
       <div class="stat-value" id="statCount"><span class="skeleton" style="width:36px;height:1.4em;">—</span></div>
@@ -74,7 +74,7 @@
   </section>
 
   <section class="form-card" aria-label="Nueva factura">
-    <h2 class="page-subtitle" style="margin-bottom: var(--space-5); color: var(--text-1); font-weight: 600; font-size: var(--text-lg);">Nueva factura</h2>
+    <h2 class="page-subtitle" id="formTitle" style="margin-bottom: var(--space-5); color: var(--text-1); font-weight: 600; font-size: var(--text-lg);">Nueva factura</h2>
 
     <form id="invoiceForm" novalidate>
       <div class="form-row two-col">
@@ -126,13 +126,14 @@
         <div class="total-amount" id="liveTotal">$0.00</div>
       </div>
 
-      <div class="field" style="margin-top: var(--space-6); margin-bottom: 0;">
+      <div class="field" style="margin-top: var(--space-6); margin-bottom: 0; display: flex; gap: var(--space-3);">
         <button type="submit" class="btn btn-primary btn-block" id="saveBtn">Guardar factura</button>
+        <a href="history.html" class="btn btn-secondary" id="cancelEditLink" style="display:none;">Cancelar</a>
       </div>
     </form>
   </section>
 
-  <section class="recent-section" aria-label="Facturas recientes">
+  <section class="recent-section" aria-label="Facturas recientes" id="recentSection">
     <div class="recent-header">
       <h2 class="page-subtitle" style="color: var(--text-1); font-weight: 600; font-size: var(--text-lg);">Facturas recientes</h2>
       <a href="history.html" class="btn btn-ghost">Ver todas</a>

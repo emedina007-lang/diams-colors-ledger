@@ -1,14 +1,16 @@
 import { requireAuth, wireLogout } from './auth-guard.js';
 import { MATERIALS, JOB_TYPE_SUGGESTIONS } from './materials.js';
-import { db, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from './firebase.js';
+import { db, collection, addDoc, getDoc, getDocs, updateDoc, doc, query, orderBy, serverTimestamp } from './firebase.js';
 
 wireLogout('#logoutBtn');
 
 const currency = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const editId = new URLSearchParams(window.location.search).get('id');
+
 let materialRowCount = 0;
 
-function createMaterialRow() {
+function createMaterialRow(prefill) {
   const id = materialRowCount++;
   const row = document.createElement('div');
   row.className = 'material-row';
@@ -42,13 +44,25 @@ function createMaterialRow() {
   });
 
   const customInput = row.querySelector('.material-custom');
-  select.addEventListener('change', () => {
+  const costInput = row.querySelector('.material-cost');
+
+  function applyOtherVisibility() {
     const isOther = select.value === 'Other';
     customInput.style.display = isOther ? '' : 'none';
     customInput.required = isOther;
-  });
+  }
 
-  row.querySelector('.material-cost').addEventListener('input', updateTotal);
+  select.addEventListener('change', applyOtherVisibility);
+
+  if (prefill) {
+    const matchesPreset = MATERIALS.some((m) => m.name === prefill.name);
+    select.value = matchesPreset ? prefill.name : 'Other';
+    applyOtherVisibility();
+    if (!matchesPreset) customInput.value = prefill.name;
+    costInput.value = prefill.cost;
+  }
+
+  costInput.addEventListener('input', updateTotal);
   row.querySelector('.remove-material-btn').addEventListener('click', () => {
     row.remove();
     updateRemoveButtonsVisibility();
@@ -65,8 +79,8 @@ function updateRemoveButtonsVisibility() {
   });
 }
 
-function addMaterialRow() {
-  document.getElementById('materialsList').appendChild(createMaterialRow());
+function addMaterialRow(prefill) {
+  document.getElementById('materialsList').appendChild(createMaterialRow(prefill));
   updateRemoveButtonsVisibility();
 }
 
@@ -78,10 +92,12 @@ function populateStaticFields() {
     jobList.appendChild(opt);
   });
 
-  document.getElementById('invoiceDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('addMaterialBtn').addEventListener('click', () => addMaterialRow());
 
-  addMaterialRow();
-  document.getElementById('addMaterialBtn').addEventListener('click', addMaterialRow);
+  if (!editId) {
+    document.getElementById('invoiceDate').value = new Date().toISOString().slice(0, 10);
+    addMaterialRow();
+  }
 }
 
 function getMaterialsCost() {
@@ -180,6 +196,46 @@ function showToast(message, isError = false) {
   showToast._t = setTimeout(() => toast.classList.remove('show'), 3200);
 }
 
+function switchToEditMode() {
+  document.getElementById('pageTitle').textContent = 'Editar factura';
+  document.getElementById('pageSubtitle').textContent = 'Corrige los detalles de esta factura.';
+  document.getElementById('formTitle').textContent = 'Editar factura';
+  document.getElementById('saveBtn').textContent = 'Guardar cambios';
+  document.getElementById('statsSection').style.display = 'none';
+  document.getElementById('recentSection').style.display = 'none';
+  const cancelLink = document.getElementById('cancelEditLink');
+  cancelLink.href = `invoice.html?id=${editId}`;
+  cancelLink.style.display = '';
+}
+
+async function loadInvoiceForEdit() {
+  switchToEditMode();
+  try {
+    const snap = await getDoc(doc(db, 'invoices', editId));
+    if (!snap.exists()) {
+      showToast('No se encontró la factura.', true);
+      setTimeout(() => { window.location.href = 'history.html'; }, 1200);
+      return;
+    }
+    const invoice = snap.data();
+
+    document.getElementById('clientName').value = invoice.clientName || '';
+    document.getElementById('jobType').value = invoice.jobType || '';
+    document.getElementById('invoiceDate').value = invoice.date || '';
+    document.getElementById('pricePerSqft').value = invoice.pricePerSqft ?? invoice.materialPrice ?? '';
+    document.getElementById('sqft').value = invoice.sqft ?? '';
+
+    const materials = invoice.materials || (invoice.material ? [{ name: invoice.material, cost: invoice.materialPrice || 0 }] : []);
+    document.getElementById('materialsList').innerHTML = '';
+    materials.forEach((m) => addMaterialRow(m));
+    if (!materials.length) addMaterialRow();
+
+    updateTotal();
+  } catch (err) {
+    showToast('No se pudo cargar la factura.', true);
+  }
+}
+
 function wireForm(uid) {
   const form = document.getElementById('invoiceForm');
   const saveBtn = document.getElementById('saveBtn');
@@ -193,7 +249,7 @@ function wireForm(uid) {
     const materials = collectMaterials();
     const materialsCost = materials.reduce((sum, m) => sum + m.cost, 0);
 
-    const invoice = {
+    const invoiceFields = {
       clientName: document.getElementById('clientName').value.trim(),
       jobType: document.getElementById('jobType').value.trim(),
       materials,
@@ -202,20 +258,27 @@ function wireForm(uid) {
       pricePerSqft,
       total: pricePerSqft * sqft + materialsCost,
       date: document.getElementById('invoiceDate').value,
-      createdAt: serverTimestamp(),
-      createdBy: uid,
     };
 
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Guardando...';
 
     try {
-      const ref = await addDoc(collection(db, 'invoices'), invoice);
-      window.location.href = `invoice.html?id=${ref.id}`;
+      if (editId) {
+        await updateDoc(doc(db, 'invoices', editId), { ...invoiceFields, updatedAt: serverTimestamp() });
+        window.location.href = `invoice.html?id=${editId}`;
+      } else {
+        const ref = await addDoc(collection(db, 'invoices'), {
+          ...invoiceFields,
+          createdAt: serverTimestamp(),
+          createdBy: uid,
+        });
+        window.location.href = `invoice.html?id=${ref.id}`;
+      }
     } catch (err) {
       showToast('No se pudo guardar la factura. Intenta de nuevo.', true);
       saveBtn.disabled = false;
-      saveBtn.textContent = 'Guardar factura';
+      saveBtn.textContent = editId ? 'Guardar cambios' : 'Guardar factura';
     }
   });
 }
@@ -280,5 +343,9 @@ wireLiveCalc();
 
 requireAuth((user) => {
   wireForm(user.uid);
-  loadStatsAndRecent();
+  if (editId) {
+    loadInvoiceForEdit();
+  } else {
+    loadStatsAndRecent();
+  }
 });
