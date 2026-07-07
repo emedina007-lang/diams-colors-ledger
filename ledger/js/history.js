@@ -40,7 +40,7 @@ function invoicesRef() {
 }
 
 function baseOrder() {
-  return [orderBy('date', 'desc'), orderBy(documentId(), 'desc')];
+  return [orderBy('createdAt', 'desc'), orderBy(documentId(), 'desc')];
 }
 
 async function fetchPage(pageNum) {

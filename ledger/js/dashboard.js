@@ -290,7 +290,7 @@ function wireForm(uid) {
 async function loadStatsAndRecent() {
   const container = document.getElementById('recentContainer');
   try {
-    const snap = await getDocs(query(collection(db, 'invoices'), orderBy('date', 'desc')));
+    const snap = await getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc')));
     const invoices = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
     document.getElementById('statCount').textContent = invoices.length;
